@@ -24,7 +24,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ### 1. Block File Types
 
-**File:** `Block File Types/`  
+**Extension:** `Block File Types/`  
 **What it does:** Monitors all tab navigations. If the URL begins with `file://` and ends with a blocked file extension (configured by administrators via managed storage), the tab is immediately closed and replaced with a "blocked" notice.
 
 **Filtering methods:**
@@ -37,7 +37,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ### 2. You Shall Not Pass
 
-**File:** `You Shall Not Pass/`  
+**Extension:** `You Shall Not Pass/`  
 **What it does:** A layered, open-source anti-evasion extension that blocks the entire ecosystem of student filter-bypass tools. It combines static URL rules, dynamic service worker detection, DOM-level exploit detection, and abuse-resistant tab management.
 
 **Filtering methods:**
@@ -56,7 +56,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ### 3. Lightspeed Chrome Filter Agent
 
-**File:** `Lightspeed/Chrome Filter/`  
+**Extension:** `Lightspeed/Chrome Filter/`  
 **What it does:** The primary commercial content filter. Uses a compiled WebAssembly policy engine to classify and block URLs in real-time based on Lightspeed's cloud-managed category database and per-user policies.
 
 **Filtering methods:**
@@ -77,7 +77,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ### 4. Lightspeed Classroom Agent
 
-**File:** `Lightspeed/Classroom/`  
+**Extension:** `Lightspeed/Classroom/`  
 **What it does:** Student-side classroom monitoring agent. Shares its content script architecture with the Chrome Filter. Primary functions are teacher visibility and real-time screen monitoring — not URL blocking.
 
 **Filtering/monitoring methods:**
@@ -93,7 +93,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ### 5. Lightspeed Identity Agent
 
-**File:** `Lightspeed/Identity Agent/`  
+**Extension:** `Lightspeed/Identity Agent/`  
 **What it does:** Silent OAuth2 identity broker. Acquires the student's Google account email and shares it with other Lightspeed extensions. No filtering or content analysis — purely infrastructure.
 
 **[→ Full Documentation](./lightspeed/identity-agent.md)**
@@ -102,7 +102,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ### 6. Lightspeed Signal Agent
 
-**File:** `Lightspeed/Signal Agent/`  
+**Extension:** `Lightspeed/Signal Agent/`  
 **What it does:** Device telemetry collector. No URL blocking. Collects performance, network, hardware, and location data from the student device and sends it to Lightspeed's cloud.
 
 **Data collection methods:**

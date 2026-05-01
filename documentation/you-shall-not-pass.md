@@ -98,7 +98,7 @@ The "Point-Blank" attack is a technique where a page rapidly calls `history.push
 
 1. Monkey-patches `window.history.pushState` and `window.history.replaceState` with intercepting wrappers.
 2. Counts calls within each 1-second window.
-3. If the count exceeds **50 calls per second** (configurable), the flood handler fires:
+3. If the count exceeds **50 calls per second** (configurable via the `contentGuard.maxHistoryPushesPerSecond` admin setting — see [Admin Configuration System](#9-admin-configuration-system) below), the flood handler fires:
    - Calls `window.stop()` to halt all page loading.
    - Replaces `document.body.innerHTML` with a red security violation notice showing the attack details.
    - Subsequent `pushState`/`replaceState` calls are silently dropped.
@@ -175,7 +175,7 @@ Checks iframe `src` attributes for Cloudflare Worker hosting patterns.
 - `/.pages.dev/i`
 - `/cloudflare.*proxy/i`
 
-**Additional heuristic:** Also checks if the subdomain appears random — subdomains longer than 8 characters matching `/[a-z0-9]{8,}/` are flagged as suspicious (indicative of auto-generated proxy hostnames).
+**Additional heuristic:** Also checks if the subdomain portion of the URL appears random — the subdomain (the leftmost label) is tested against `/^[a-z0-9]{8,}$/` (lowercase alphanumeric, exactly matching the subdomain label, 8 or more characters). Subdomains matching this pattern are flagged as suspicious, indicative of auto-generated proxy hostnames (e.g., `ab3f9d12.workers.dev`).
 
 #### 5d. Base64 Encoded Content Detection
 

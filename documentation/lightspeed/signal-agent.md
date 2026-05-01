@@ -94,7 +94,7 @@ When triggered by the background (via `action: 'batteryGet'`):
 1. Calls `navigator.getBattery()` to get the `BatteryManager`.
 2. Collects:
    - `charging` (boolean — is device plugged in?)
-   - `level` (0–100 percentage, calculated as `Math.round(100 * battery.level)`)
+   - `level` (0–100 percentage; the native `BatteryManager.level` returns 0.0–1.0, which is converted by `Math.round(100 * battery.level)`)
    - `dischargingTime` (seconds until empty)
    - `chargingTime` (seconds until full)
 3. Sends the data to the background for reporting.
