@@ -2,6 +2,10 @@
 
 This repository contains the extension code for multiple browser extensions used on managed Chromebooks for students, as well as documentation regarding common school Chrome extensions written by AI.
 
+## Why
+
+An [announcement by Lightspeed Systems](https://www.lightspeedsystems.com/news/lightspeed-systems-introduces-live-intelligence-for-bypass-detection-and-blocking/) was shared with me, which made me wonder how that works and what the extensions actually do.
+
 ## Report
 
 I wrote a report using the documentation that summarizes, points out key findings, and explains what surprised me. The report can be found in [REPORT.md](./REPORT.md)
