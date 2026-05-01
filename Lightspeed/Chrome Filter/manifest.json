@@ -1,0 +1,68 @@
+{
+  "manifest_version": 3,
+  "name": "Lightspeed Filter Agent",
+  "description": "Lightspeed Filter Agent for Chrome",
+  "version": "4.3.0.1777107754",
+  "options_page": "options.html",
+  "icons": {
+    "16": "icon-16.png",
+    "128": "icon-128.png"
+  },
+  "permissions": [
+    "webRequest",
+    "idle",
+    "background",
+    "tabs",
+    "storage",
+    "history",
+    "webRequestBlocking",
+    "identity",
+    "identity.email",
+    "management",
+    "enterprise.deviceAttributes",
+    "enterprise.networkingAttributes",
+    "proxy",
+    "bookmarks"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "all_frames": true,
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "blocked.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "externally_connectable": {
+    "ids": [
+      "adkcpkpghahmbopkjchobieckeoaoeem",
+      "egnmgclkeiioginamdjpnglaooajmcjm",
+      "oabgjilkcpjhblbghejemfighgjhecjl"
+    ]
+  },
+  "incognito": "spanning",
+  "update_url": "https://lsrelay-extensions-production.s3.amazonaws.com/chrome-filter/f8db5b5547d93ef167b094ef5c73485f56e752bb4971141abb5cda8ffb88c8ee/v3/ChromeFilter.xml"
+}

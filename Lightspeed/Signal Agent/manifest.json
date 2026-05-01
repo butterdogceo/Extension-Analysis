@@ -1,0 +1,50 @@
+{
+  "manifest_version": 3,
+  "name": "Lightspeed Signal Agent",
+  "description": "Lightspeed Signal Agent for Chrome",
+  "version": "0.6.1.1776950773",
+  "icons": {
+    "16": "icon-16.png",
+    "128": "icon-128.png"
+  },
+  "permissions": [
+    "action",
+    "activeTab",
+    "alarms",
+    "bookmarks",
+    "enterprise.deviceAttributes",
+    "enterprise.hardwarePlatform",
+    "enterprise.networkingAttributes",
+    "geolocation",
+    "identity",
+    "identity.email",
+    "offscreen",
+    "storage",
+    "system.cpu",
+    "system.memory",
+    "system.storage",
+    "tabs",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "timings.js"
+      ]
+    }
+  ],
+  "update_url": "https://lsrelay-extensions-production.s3.amazonaws.com/signal/f8db5b5547d93ef167b094ef5c73485f56e752bb4971141abb5cda8ffb88c8ee/SignalAgent.xml"
+}

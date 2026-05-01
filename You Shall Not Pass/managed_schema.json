@@ -1,0 +1,126 @@
+{
+  "type": "object",
+  "properties": {
+    "configUrl": {
+      "title": "Configuration URL",
+      "description": "URL to a hosted JSON configuration file. The extension will fetch this on startup and periodically refresh it.",
+      "type": "string"
+    },
+    "config": {
+      "title": "Inline Configuration",
+      "description": "Full or partial configuration object. Any missing fields use defaults. If both configUrl and config are set, configUrl takes precedence.",
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "integer",
+          "description": "Schema version number"
+        },
+        "rules": {
+          "type": "object",
+          "description": "Toggle individual blocking rules by ID. Keys are rule IDs (e.g. '1002'). Each value is an object with an 'enabled' boolean.",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "tabLimits": {
+          "type": "object",
+          "properties": {
+            "maxTabs": {
+              "type": "integer",
+              "description": "Maximum total tabs allowed (default: 15)"
+            },
+            "tabCreationWindow": {
+              "type": "integer",
+              "description": "Time window in ms for spam detection (default: 2000)"
+            },
+            "maxTabsInWindow": {
+              "type": "integer",
+              "description": "Max tabs created within the time window before triggering spam detection (default: 5)"
+            }
+          }
+        },
+        "contentGuard": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable content guard protection (default: true)"
+            },
+            "maxHistoryPushesPerSecond": {
+              "type": "integer",
+              "description": "History pushState threshold per second before triggering flood detection (default: 50)"
+            },
+            "enableLTBEEFDetection": {
+              "type": "boolean",
+              "description": "Enable LTBEEF exploit GUI detection (default: true)"
+            }
+          }
+        },
+        "googleSitesInspector": {
+          "type": "object",
+          "properties": {
+            "enableBlobBlocking": {
+              "type": "boolean",
+              "description": "Block blob URL iframes on Google Sites (default: true)"
+            },
+            "enableGameDetection": {
+              "type": "boolean",
+              "description": "Detect and block game engine signatures in iframes (default: true)"
+            },
+            "enableWorkerDetection": {
+              "type": "boolean",
+              "description": "Detect Cloudflare Worker proxy iframes (default: true)"
+            },
+            "enableBase64Detection": {
+              "type": "boolean",
+              "description": "Detect Base64-encoded game content in scripts (default: true)"
+            },
+            "scanInterval": {
+              "type": "integer",
+              "description": "Iframe scan interval in ms (default: 2000)"
+            },
+            "minSuspiciousFrameSize": {
+              "type": "integer",
+              "description": "Minimum iframe pixel size to be considered suspicious (default: 400)"
+            }
+          }
+        },
+        "heartbeat": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable heartbeat monitoring (default: true)"
+            },
+            "interval": {
+              "type": "integer",
+              "description": "Heartbeat check interval in ms (default: 5000)"
+            }
+          }
+        },
+        "domains": {
+          "type": "object",
+          "properties": {
+            "additionalWhitelist": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Additional domains to whitelist (added to built-in educational whitelist)"
+            },
+            "additionalBlacklist": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Additional domains to block via dynamic rules"
+            }
+          }
+        }
+      }
+    }
+  }
+}

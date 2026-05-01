@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Lightspeed Identity Agent",
+  "version": "1.0.2.1776213267",
+  "description": "OAuth identity provider for Lightspeed Agents",
+  "permissions": [
+    "alarms",
+    "enterprise.deviceAttributes",
+    "identity",
+    "identity.email",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-32.png",
+    "128": "icons/icon-128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "externally_connectable": {
+    "ids": [
+      "molgbfminhipdelmipmknlibjddljlne",
+      "ijmiopojbbpfnaobejkkjpcdipbijgcd",
+      "oabgjilkcpjhblbghejemfighgjhecjl",
+      "njdniclgegijdcdliklgieicanpmcngj",
+      "ehnniokiiebpinnfegpkdlcamgdcaaje",
+      "opckliiodihlmpliejjddbpdjdhdkefm",
+      "deognlgdmdbhpkjgickmfaiilpjpbcna"
+    ]
+  },
+  "oauth2": {
+    "client_id": "456445855346-fbctaog1osups8vh5p8jndn3evcnt3b8.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
+  "update_url": "https://lsrelay-extensions-production.s3.amazonaws.com/ident/f8db5b5547d93ef167b094ef5c73485f56e752bb4971141abb5cda8ffb88c8ee/IdentAgent.xml"
+}

@@ -1,0 +1,78 @@
+{
+  "manifest_version": 3,
+  "name": "Lightspeed Classroom Agent",
+  "description": "Lightspeed Classroom Agent for Chrome",
+  "version": "5.3.0.1777318718",
+  "options_page": "options.html",
+  "icons": {
+    "16": "assets/icon-classroom-16.png",
+    "48": "assets/icon-classroom-48.png",
+    "128": "assets/icon-classroom-128.png"
+  },
+  "action": {
+    "default_popup": "menu.html",
+    "default_title": "Classroom Status",
+    "default_icon": {
+      "16": "assets/browseraction-working.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "background",
+    "bookmarks",
+    "desktopCapture",
+    "enterprise.deviceAttributes",
+    "identity",
+    "identity.email",
+    "idle",
+    "offscreen",
+    "storage",
+    "tabCapture",
+    "tabs",
+    "notifications",
+    "webRequest"
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "all_frames": true,
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "*.png",
+        "content.js",
+        "console.html",
+        "offscreen.html",
+        "rtc_connection.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  },
+  "externally_connectable": {
+    "ids": [
+      "kkbmdgjggcdajckdlbngdjonpchpaiea"
+    ]
+  },
+  "incognito": "spanning",
+  "update_url": "https://lsrelay-extensions-production.s3.amazonaws.com/classroom/f8db5b5547d93ef167b094ef5c73485f56e752bb4971141abb5cda8ffb88c8ee/v3/Classroom.xml"
+}
