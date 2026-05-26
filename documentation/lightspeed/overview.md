@@ -25,24 +25,24 @@ Lightspeed deploys five coordinated Chrome extensions on managed Chromebooks. Th
 ┌─────────────────────────────────────────────────────────────────┐
 │  Student Chromebook                                             │
 │                                                                 │
-│  ┌───────────────┐  identity   ┌──────────────────────────┐   │
-│  │ Identity Agent│ ──────────► │  Chrome Filter Agent     │   │
-│  │               │             │  (URL blocking, policy)  │   │
-│  └───────────────┘             └──────────┬───────────────┘   │
-│                                           │ category/policy    │
-│                                           ▼                    │
-│                               ┌──────────────────────────┐     │
-│                               │  Filter Helper           │     │
-│                               │  (blur + bypass detect)  │     │
-│                               └───────┬───────────┬──────┘     │
-│         identity                      │ reports    │ AI logs   │
-│         ▼                             ▼            ▼           │
-│  ┌───────────────┐           ┌─────────────────────────┐      │
-│  │ Classroom     │           │  Signal Agent           │      │
-│  │ Agent         │           │  (telemetry, timing)    │      │
-│  │ (monitoring)  │           └──────────┬──────────────┘      │
-│  └───────┬───────┘                      │                      │
-└──────────┼───────────────────────────── │ ────────────────────┘
+│  ┌───────────────┐  identity   ┌──────────────────────────┐     │
+│  │ Identity Agent│ ──────────► │  Chrome Filter Agent     │     │
+│  │               │             │  (URL blocking, policy)  │     │
+│  └───────────────┘             └──────────┬───────────────┘     │
+│                                           │ category/policy     │
+│                                           ▼                     │
+│                               ┌──────────────────────────┐      │
+│                               │  Filter Helper           │      │
+│                               │  (blur + bypass detect)  │      │
+│                               └───────┬───────────┬──────┘      │
+│         identity                      │ reports    │ AI logs    │
+│         ▼                             ▼            ▼            │
+│  ┌───────────────┐           ┌─────────────────────────┐        │
+│  │ Classroom     │           │  Signal Agent           │        │
+│  │ Agent         │           │  (telemetry, timing)    │        │
+│  │ (monitoring)  │           └──────────┬──────────────┘        │
+│  └───────┬───────┘                      │                       │
+└──────────┼───────────────────────────── │ ──────────────────────┘
            │                              │
            ▼                              ▼
     Teacher Dashboard              Lightspeed Cloud
