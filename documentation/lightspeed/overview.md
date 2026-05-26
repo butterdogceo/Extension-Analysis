@@ -7,11 +7,12 @@
 
 ## Suite Overview
 
-Lightspeed deploys four coordinated Chrome extensions on managed Chromebooks. They are tightly integrated — sharing identity through the Identity Agent and policy through the Relay cloud service.
+Lightspeed deploys five coordinated Chrome extensions on managed Chromebooks. They are tightly integrated — sharing identity through the Identity Agent and policy through the Relay cloud service.
 
 | Extension | Version | Primary Function |
 |-----------|---------|-----------------|
 | [Chrome Filter Agent](./chrome-filter.md) | 4.3.0 | URL categorization, content blocking, policy enforcement |
+| [Filter Helper](./filter-helper.md) | 1.3.3 | Client-side image blurring, proxy/bypass-page detection, AI prompt logging |
 | [Classroom Agent](./classroom-agent.md) | 5.3.0 | Teacher monitoring, screen sharing, tab visibility |
 | [Identity Agent](./identity-agent.md) | 1.0.2 | OAuth2 identity resolution and sharing |
 | [Signal Agent](./signal-agent.md) | 0.6.1 | Device telemetry, speed testing, hardware metrics |
@@ -28,8 +29,14 @@ Lightspeed deploys four coordinated Chrome extensions on managed Chromebooks. Th
 │  │ Identity Agent│ ──────────► │  Chrome Filter Agent     │   │
 │  │               │             │  (URL blocking, policy)  │   │
 │  └───────────────┘             └──────────┬───────────────┘   │
-│         │ identity                        │ violations         │
-│         ▼                                 ▼                     │
+│                                           │ category/policy    │
+│                                           ▼                    │
+│                               ┌──────────────────────────┐     │
+│                               │  Filter Helper           │     │
+│                               │  (blur + bypass detect)  │     │
+│                               └───────┬───────────┬──────┘     │
+│         identity                      │ reports    │ AI logs   │
+│         ▼                             ▼            ▼           │
 │  ┌───────────────┐           ┌─────────────────────────┐      │
 │  │ Classroom     │           │  Signal Agent           │      │
 │  │ Agent         │           │  (telemetry, timing)    │      │
@@ -49,5 +56,7 @@ Lightspeed deploys four coordinated Chrome extensions on managed Chromebooks. Th
 - **Policy API:** `https://devices.filter.relay.school/filter/chrome/v2/user_policy`
 - **Real-time policy sync:** `wss://production-gc.lsfilter.com`
 - **Violation reporting:** AWS SQS `lsrelay-reports-production` (us-west-2)
+- **Filter Helper AI prompt reporting:** AWS SQS `ai-prompt-reporting` (us-west-2)
+- **Filter Helper credentials / helper service:** `https://filter-agent.lightspeedsystems.app`
 - **Block page assets:** `lsrelay-config-production.s3.amazonaws.com`
 - **Extension updates:** `lsrelay-extensions-production.s3.amazonaws.com`

@@ -12,6 +12,7 @@ This documentation covers every filtering and detection method used by the brows
 | **You Shall Not Pass** | Comprehensive anti-bypass extension targeting web proxies, exploit tools, and Google Sites abuse | [View →](./you-shall-not-pass.md) |
 | **Lightspeed Suite** | Commercial K-12 content filter, classroom monitor, and device telemetry platform | [View →](./lightspeed/overview.md) |
 | ↳ Lightspeed Chrome Filter Agent | URL categorization, WASM-based policy engine, request blocking/redirecting | [View →](./lightspeed/chrome-filter.md) |
+| ↳ Lightspeed Filter Helper | Client-side image blurring, proxy/bypass-page detection, AI prompt logging | [View →](./lightspeed/filter-helper.md) |
 | ↳ Lightspeed Classroom Agent | Teacher monitoring, real-time screen sharing, browsing visibility | [View →](./lightspeed/classroom-agent.md) |
 | ↳ Lightspeed Identity Agent | OAuth2 identity broker for other Lightspeed extensions | [View →](./lightspeed/identity-agent.md) |
 | ↳ Lightspeed Signal Agent | Device telemetry, speed testing, page timing, geolocation | [View →](./lightspeed/signal-agent.md) |
@@ -75,7 +76,26 @@ This documentation covers every filtering and detection method used by the brows
 
 ---
 
-### 4. Lightspeed Classroom Agent
+### 4. Lightspeed Filter Helper
+
+**Extension:** `Lightspeed/Filter Helper/`
+**What it does:** A companion extension that applies client-side filtering and detection inside the page. It can blur images on policy-selected page categories, detect proxy/unblocker pages by their UI and runtime artifacts, and log AI prompts/responses related to circumvention.
+
+**Filtering/detection methods:**
+1. **Category-gated image blur** — asks the Lightspeed filtering stack for the current host category and only enables blur on configured categories
+2. **Local NSFW image classification** — MobileNet V2 model in an offscreen document scores images as `neutral`, `drawing`, `hentai`, `porn`, or `sexy`
+3. **Continuous image rescanning** — scans existing `<img>` tags, new DOM nodes, `src` changes, and CSS `background-image` URLs
+4. **Proxy framework detection** — looks for Scramjet, Ultraviolet, BareMux, `ob-fonts`, and similar runtime artifacts
+5. **Proxy template/UI detection** — matches proxy URL fields, buttons, iframes, hidden form fields, and classic templates like Glype, PHProxy, CGIProxy, and UltraSurf
+6. **Education-brand spoofing detection** — compares canonical/Open Graph metadata and page structure against trusted school-oriented brands
+7. **Known-domain fallback** — flags hardcoded and admin-configured proxy domains even if page heuristics are weak
+8. **AI circumvention intent logging** — captures AI prompts/responses and classifies requests about unblocking, bypassing filters, anonymous browsing, and similar behavior
+
+**[→ Full Documentation](./lightspeed/filter-helper.md)**
+
+---
+
+### 5. Lightspeed Classroom Agent
 
 **Extension:** `Lightspeed/Classroom/`  
 **What it does:** Student-side classroom monitoring agent. Shares its content script architecture with the Chrome Filter. Primary functions are teacher visibility and real-time screen monitoring — not URL blocking.
@@ -91,7 +111,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ---
 
-### 5. Lightspeed Identity Agent
+### 6. Lightspeed Identity Agent
 
 **Extension:** `Lightspeed/Identity Agent/`  
 **What it does:** Silent OAuth2 identity broker. Acquires the student's Google account email and shares it with other Lightspeed extensions. No filtering or content analysis — purely infrastructure.
@@ -100,7 +120,7 @@ This documentation covers every filtering and detection method used by the brows
 
 ---
 
-### 6. Lightspeed Signal Agent
+### 7. Lightspeed Signal Agent
 
 **Extension:** `Lightspeed/Signal Agent/`  
 **What it does:** Device telemetry collector. No URL blocking. Collects performance, network, hardware, and location data from the student device and sends it to Lightspeed's cloud.
@@ -124,6 +144,9 @@ This documentation covers every filtering and detection method used by the brows
 | Trigger | Extension Responsible |
 |---------|----------------------|
 | URL categorized as games, adult content, social media, etc. | Lightspeed Chrome Filter (WASM engine) |
+| Page is in a configured blur category and an image scores as `porn`, `sexy`, or `hentai` | Lightspeed Filter Helper |
+| Page contains proxy/unblocker UI, proxy framework artifacts, or spoofed education-brand metadata | Lightspeed Filter Helper |
+| AI prompt/response asks how to unblock sites, bypass filters, or browse anonymously | Lightspeed Filter Helper |
 | URL contains "unblock" + "game/site/web" | You Shall Not Pass (Rule 1003) |
 | Site hosted on `*.workers.dev` | You Shall Not Pass (Rule 1024) |
 | Site hosted on `*.pages.dev` + has game/proxy in URL | You Shall Not Pass (Rules 1017, 1023) |
@@ -139,6 +162,7 @@ This documentation covers every filtering and detection method used by the brows
 - Sites on the educational whitelist (Wikipedia, Khan Academy, Google Workspace, etc.) are excluded from You Shall Not Pass's DNR rules.
 - The Classroom Agent and Signal Agent **never block URLs** — they only observe and report.
 - The Identity Agent has **no filtering behavior** whatsoever.
+- The Filter Helper does **not** block requests itself; it blurs page images and reports bypass/AI activity.
 - Normal HTTP/HTTPS websites served without proxy-tool naming patterns are not affected by You Shall Not Pass.
 - Lightspeed blocking is policy-configurable — the school admin controls which categories are blocked.
 
