@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Lightspeed Filter Agent",
   "description": "Lightspeed Filter Agent for Chrome",
-  "version": "4.3.0.1777107754",
+  "version": "4.4.9.1791454364",
   "options_page": "options.html",
   "icons": {
     "16": "icon-16.png",
@@ -60,7 +60,11 @@
     "ids": [
       "adkcpkpghahmbopkjchobieckeoaoeem",
       "egnmgclkeiioginamdjpnglaooajmcjm",
-      "oabgjilkcpjhblbghejemfighgjhecjl"
+      "oabgjilkcpjhblbghejemfighgjhecjl",
+      "njdniclgegijdcdliklgieicanpmcngj",
+      "edeehpcbfibhgpnnipaepekmdpfdeocl",
+      "admfkpemnblkgpmgngfnjpjbcanadolm",
+      "dhpobhlmbjkoibkifaepnhaphhefkkco"
     ]
   },
   "incognito": "spanning",

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Lightspeed Signal Agent",
   "description": "Lightspeed Signal Agent for Chrome",
-  "version": "0.6.1.1776950773",
+  "version": "0.6.3.1790048322",
   "icons": {
     "16": "icon-16.png",
     "128": "icon-128.png"

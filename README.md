@@ -23,4 +23,4 @@ A GitHub Copilot Agent was prompted to analyze and document the extensions. The 
 > Analyze each extension, and document every method and feature that relates to filtering. Be specific about what it searches for or does, and how.
 Create documentation in a "documentation" folder, and ensure the docs are organized.
 Create a main document that summarizes what each extension does, and create a hyperlink to the extension's documentation.
-You may use any tools and methods to analyze these extensions, even if you need to, for example, format an extension's code to make it more readable. Push your changes to the main branch upon completion. Good luck, agent.
+You may use any tools and methods to analyze these extensions, even if you need to, for example, format an extension's code to make it more readable. Push your changes to the main branch upon completion.

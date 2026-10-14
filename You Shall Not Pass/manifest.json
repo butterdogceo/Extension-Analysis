@@ -2,19 +2,17 @@
 "update_url": "https://clients2.google.com/service/update2/crx",
 
   "manifest_version": 3,
-  "name": "You Shall Not Pass by Jim Tyler",
-  "version": "3.0.5",
+  "name": "You Shall Not Pass by TeacherMagic.org",
+  "version": "3.3.0",
+  "minimum_chrome_version": "111",
   "description": "Blocks proxy sites, filter evasion exploits, tab spam, and Google Sites abuse on student Chromebooks. Free forever.",
   "permissions": [
-    "tabs",
-    "scripting",
     "storage",
     "webNavigation",
-    "declarativeNetRequest",
-    "declarativeNetRequestFeedback"
+    "declarativeNetRequest"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://*/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -22,15 +20,48 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": ["http://*/*", "https://*/*", "file://*/*"],
+      "js": ["history_guard_main.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*", "file://*/*"],
       "js": ["content_guard.js"],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     },
     {
       "matches": ["*://sites.google.com/*"],
       "js": ["google_sites_inspector.js"],
       "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": true
+    },
+    {
+      "matches": ["*://script.googleusercontent.com/macros/*", "*://*.googleusercontent.com/userCodeAppPanel*"],
+      "js": ["apps_script_inspector.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    },
+    {
+      "matches": ["*://www.google.com/*", "*://google.com/*"],
+      "js": ["ai_overview_hider.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://docs.google.com/document/*",
+        "https://docs.google.com/spreadsheets/*",
+        "https://docs.google.com/presentation/*"
+      ],
+      "js": ["docs_youtube_blocker.js"],
+      "run_at": "document_start",
       "all_frames": true
     }
   ],

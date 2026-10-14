@@ -17,7 +17,7 @@
         },
         "rules": {
           "type": "object",
-          "description": "Toggle individual blocking rules by ID. Keys are rule IDs (e.g. '1002'). Each value is an object with an 'enabled' boolean.",
+          "description": "Toggle individual blocking rules by ID. Keys are rule IDs (e.g. '1002'). Each value is an object with an 'enabled' boolean. All rules are on by default except 1037 (the *.translate.goog site-translation proxy), which is off by default; set it to enabled: true to block it.",
           "patternProperties": {
             "^[0-9]+$": {
               "type": "object",
@@ -59,13 +59,33 @@
             },
             "enableLTBEEFDetection": {
               "type": "boolean",
-              "description": "Enable LTBEEF exploit GUI detection (default: true)"
+              "description": "Master toggle for the anti-extension-tamper subsystem. LEGACY KEY NAME: the LTBEEF/Ingot-specific detection it was named for was removed in 3.2.0 (those exploits were patched in Chrome 106 and cannot run on the Chrome 111+ this extension requires). The subsystem now targets current tooling by behavior (default: true)"
+            },
+            "enableAntiExtensionHeuristics": {
+              "type": "boolean",
+              "description": "Detect anti-extension control panels by structure and text: a high-z-index injected overlay whose text matches a HARD tampering signature ('disable extensions', 'beginInstallWithManifest3', 'webstorePrivate', 'noguardian'). Catches renamed variants. Ordinary-language tells are excluded to avoid false positives on cookie banners/modals; all reloads are rate-capped. Requires enableLTBEEFDetection to also be true. Default: true"
+            },
+            "enableBlobGuard": {
+              "type": "boolean",
+              "description": "Cross-origin blob:/srcdoc/javascript: game-iframe guard that runs on ALL pages (not just sites.google.com). Closes the bypass of spawning a game from a blob on a cheap domain or a file: URL. Uses HIGH-confidence signatures only (specific launcher fingerprints, engine loaders, ad-fraud hosts, brand names) to keep false positives near zero on the open web. Default: true"
+            },
+            "enableHubShellDetection": {
+              "type": "boolean",
+              "description": "Hub-shell detector (3.2.4): fingerprints the inline bootstrap scripts of bare-shell proxy hubs (2026 cherri/Fern family) — the service-worker takeover snippet, hub globals, renamed Scramjet/Ultraviolet/Sapphire/Bare-Mux symbol names, the Adcash popunder call, and known hub GitHub-account CDN paths. Conclusive coined-token/vendor-API signatures only; on a hit the page is stopped, its service workers are unregistered, and the block notice is shown. Default: true"
+            },
+            "enableServiceWorkerScan": {
+              "type": "boolean",
+              "description": "Read the page's registered service worker source (and the scripts it imports) and block the page if it contains proxy-framework internals (Scramjet, Ultraviolet, Bare-Mux, Sapphire, Rammerhead). These symbols are compiled into the frameworks and survive renaming of files and globals; legitimate PWAs never contain them. Default: true"
             }
           }
         },
         "googleSitesInspector": {
           "type": "object",
           "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Master toggle for the entire Google Sites inspector. Set to false to disable all sites.google.com DOM inspection — useful as a panic switch if a release interferes with a legitimate resource (default: true)"
+            },
             "enableBlobBlocking": {
               "type": "boolean",
               "description": "Block blob URL iframes on Google Sites (default: true)"
@@ -82,6 +102,37 @@
               "type": "boolean",
               "description": "Detect Base64-encoded game content in scripts (default: true)"
             },
+            "enableAppsScriptDetection": {
+              "type": "boolean",
+              "description": "Block Google-hosted game embeds on Google Sites when the parent page URL matches known unblocked-games-hub patterns (e.g. drive-u-, unblocked-games-, proxy-hub-). Covers Apps Script web apps (script.google.com/macros/.../exec), the Sites Embed Code widget intermediate frame (gstatic.com/atari/embeds/...), and the per-tenant inner frame (*.atari-embeds.googleusercontent.com/embeds/...). Legitimate teacher embeds on normal-named class pages are unaffected (default: true)"
+            },
+            "enableSrcdocInspection": {
+              "type": "boolean",
+              "description": "Inspect iframe srcdoc content for game/launcher/brand signatures. An <iframe srcdoc=...> runs with the parent origin and leaves no network request, blob, or data: URL, so it evades URL/network detection — the successor vector to the about:blank/data: launches closed in 3.0.12/3.0.13. Default: true"
+            },
+            "enableServerlessProxyDetection": {
+              "type": "boolean",
+              "description": "Detect games/proxies embedded from serverless/static hosts (workers.dev, pages.dev, *.vercel.app, *.netlify.app, *.onrender.com, *.web.app, *.firebaseapp.com, *.appspot.com, glitch.me, surge.sh, neocities.org, koyeb.app, replit.app). Blocks only when the subdomain looks machine-generated OR the parent page corroborates as an evasion hub, so ordinary sites on these hosts are unaffected. Default: true"
+            },
+            "enablePageBodyCatalogScan": {
+              "type": "boolean",
+              "description": "Scan the Sites page BODY (not just Embed Code widget data-code attributes) for an unblocked-games catalog: the free-game-grid marker (conclusive) or two-or-more distinct commercial game brand names rendered directly in the page (a grid, not an offhand mention). Closes the case where the catalog is in the page body rather than inside an embed widget. Default: true"
+            },
+            "enableServiceWorkerCheck": {
+              "type": "boolean",
+              "description": "Obfuscation-proof service-worker anomaly check on the Sites origin. Reads no page code — it asks the browser whether a service worker is registered (how Ultraviolet/Scramjet-class proxies intercept navigation), which name-based detection misses when the proxy bundle is obfuscated. LOGS by default (zero-false-positive diagnostic); only UNREGISTERS when it is safe to be aggressive — strict mode is on AND the page already looks like an evasion hub. A novel self-hosted obfuscated proxy on its own domain remains a DNR/Workspace problem, not one a content script can fully solve. Default: true"
+            },
+            "enableStrictSitesMode": {
+              "type": "boolean",
+              "description": "Tier 3 default-deny mode. When true, blocks ALL cross-origin iframes on sites.google.com except those matching the built-in or admin-extended allowlist (additionalIframeAllowlist). Strongest available defense against evasion-hub iframe embedding, but will break legitimate teacher embeds for any service not in the allowlist — recommended only for districts willing to maintain additions. Built-in allowlist covers Google services (docs, calendar, drive, maps, YouTube), major educational platforms (PhET, GeoGebra, Desmos, Khan, Quizlet, Nearpod, Padlet, Quizizz, Blooket, CommonLit, Newsela, BrainPOP, Canva, Prezi, etc.), and common code playgrounds (CodePen, JSFiddle, Replit, Scratch, Tinkercad). NOT in default allowlist (most-abused surfaces): script.google.com, www.gstatic.com, *.atari-embeds.googleusercontent.com — districts that need these can add them to additionalIframeAllowlist. Default: false (use multi-signal detection only)"
+            },
+            "additionalIframeAllowlist": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Additional iframe origins to permit when enableStrictSitesMode is true. Each entry can be: an exact hostname ('phet.colorado.edu'), a hostname-suffix pattern starting with a dot ('.example.com' matches example.com and any subdomain), or a full URL prefix ('https://script.google.com/macros/' allows any URL starting with that prefix). Use URL-prefix entries to permit specific paths on otherwise-blocked hosts (e.g. allow Apps Script web apps without unblocking the rest of script.google.com)."
+            },
             "scanInterval": {
               "type": "integer",
               "description": "Iframe scan interval in ms (default: 2000)"
@@ -89,6 +140,15 @@
             "minSuspiciousFrameSize": {
               "type": "integer",
               "description": "Minimum iframe pixel size to be considered suspicious (default: 400)"
+            }
+          }
+        },
+        "appsScriptInspector": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Runs inside the script.googleusercontent.com iframe that hosts Google Apps Script web-app content. Detects and blocks game content (Unity loader, Construct 3 runtime, ad-fraud SDK hooks, base64 game payloads, jsDelivr GitHub-pinned game assets, IMA ad-spoofing patterns) when the rendered HTML matches high-confidence game fingerprints. Catches the case where a student deploys their own Apps Script web app (typically from their school Workspace account, producing the /a/macros/{domain}/s/{id}/exec URL form) and uses it to host a game directly, bypassing the Google Sites embedding flow. Apps Script has many legitimate uses (teacher forms, surveys, dashboards), so detection requires high-confidence patterns only. Default: true."
             }
           }
         },
@@ -110,13 +170,42 @@
           "properties": {
             "additionalWhitelist": {
               "type": "array",
-              "items": { "type": "string" },
+              "items": {
+                "type": "string"
+              },
               "description": "Additional domains to whitelist (added to built-in educational whitelist)"
             },
             "additionalBlacklist": {
               "type": "array",
-              "items": { "type": "string" },
-              "description": "Additional domains to block via dynamic rules"
+              "items": {
+                "type": "string"
+              },
+              "description": "Additional domains to block via dynamic rules (matched at network origin). Example: 'unblockedgames.io'"
+            },
+            "additionalUrlFilters": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Additional DNR urlFilter patterns to block (main_frame and sub_frame only). Use for path-prefix blocks where the origin itself is legitimate. Example: '||sites.google.com/classroom.center/' to block a specific Google Sites owner-path without blocking sites.google.com as a whole."
+            }
+          }
+        },
+        "classroomControls": {
+          "type": "object",
+          "description": "Controls for evasions that run through an allowed Google feature instead of a proxy site. Blocking them changes how a legitimate product behaves, so each one is OFF by default and does nothing until set to true.",
+          "properties": {
+            "hideGoogleAiOverview": {
+              "type": "boolean",
+              "description": "Hide Google's AI Overview and the AI Mode entry points on google.com search results so students engage with primary sources. Runs only on google.com. Default: false"
+            },
+            "blockYouTubeInDocs": {
+              "type": "boolean",
+              "description": "Block YouTube preview popups, link-preview hover cards, smart chips and embedded players inside Google Docs, Sheets and Slides. Blocks YouTube requests initiated by docs.google.com and removes the leftover preview UI. Browsing youtube.com directly is unaffected. Takes priority over a youtube.com entry in domains.additionalWhitelist. Default: false"
+            },
+            "blockYouTubeInSearch": {
+              "type": "boolean",
+              "description": "Block YouTube players embedded in search-engine result pages (Google Search, Bing, DuckDuckGo, Yahoo, Brave, Startpage, Yandex, Ecosia), which let students watch a blocked YouTube without visiting youtube.com. Blocks only embedded players on those result pages; clicking through to youtube.com, and YouTube in Classroom, Docs and Sites, are unaffected. Takes priority over a youtube.com entry in domains.additionalWhitelist. Default: false"
             }
           }
         }

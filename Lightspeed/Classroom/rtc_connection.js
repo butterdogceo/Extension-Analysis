@@ -1,12 +1,9 @@
 const RTCServers = [
-  {url: 'stun:stun.l.google.com:19302'},
-  {url: 'stun:stun1.l.google.com:19302'},
-  {url: 'stun:stun2.l.google.com:19302'},
-  {url: 'stun:stun3.l.google.com:19302'},
-  {url: 'stun:stun3.l.google.com:19302'},
-  {url: 'stun:stun4.l.google.com:19302'},
-  {url: 'turn:turn.bistri.com:80', credential: 'homeo', username: 'homeo'},
-  {url: 'turn:turn.anyfirewall.com:443?transport=tcp', credential: 'webrtc', username: 'webrtc'}
+  {urls: 'stun:stun.l.google.com:19302'},
+  {urls: 'stun:stun1.l.google.com:19302'},
+  {urls: 'stun:stun2.l.google.com:19302'},
+  {urls: 'stun:stun3.l.google.com:19302'},
+  {urls: 'stun:stun4.l.google.com:19302'},
 ];
 
 const codec = 'VP8';
@@ -26,6 +23,28 @@ const bitrates = {
 };
 
 let canvas, canvasCtx, connectionHandler, getStatsInt, img, sender;
+
+// policy-supplied max bitrate override, in kbps (same units as `bitrates`
+// above). null means "no override, use the hardcoded defaults".
+let policyBitrateKbps = null;
+
+// //
+// the effective bitrate tier for a connection type, with any policy override
+// applied. The override replaces `max` directly (so a district can raise or
+// lower it), and `min`/`start` are clamped down to stay under the new max --
+// they must never exceed it.
+function effectiveBitrate(type) {
+  const base = bitrates[type];
+  if (typeof(policyBitrateKbps) !== 'number' || !Number.isFinite(policyBitrateKbps) || policyBitrateKbps <= 0) {
+    return base;
+  }
+
+  return {
+    max: policyBitrateKbps,
+    min: Math.min(base.min, policyBitrateKbps),
+    start: Math.min(base.start, policyBitrateKbps)
+  };
+}
 
 // //
 // listener for messages from worker
@@ -49,6 +68,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'answer_rtc_ice':
       connectionHandler.onAnswerIce(message.data);
+      break;
+
+    case 'set_bitrate':
+      console.debug('[set_bitrate] policy bitrate override ->', message.data);
+      policyBitrateKbps = message.data;
+      break;
+
+    case 'close_stale_connections':
+      connectionHandler.closeAllStaleConnections();
+      break;
+
+    case 'wake_extend':
+      // Extend disconnected timeouts on all connections during wake
+      connectionHandler.setWakeExtendedTimeout();
       break;
 
     default:
@@ -84,6 +117,10 @@ function captureImageToStream(data) {
     }
   };
 
+  img.onerror = () => {
+    console.warn('[captureImageToStream] image decode error, frame dropped');
+  };
+
   console.debug('[captureImageToStream] setting img src');
   img.setAttribute('src', data);
 }
@@ -112,6 +149,22 @@ class CoRTCConnectionHandler {
       this.addPresence(sessionId);
 
       let rtc = this.connections[sessionId];
+
+      // Always tear down existing connection on a new request_rtc.
+      // The teacher may have restarted the class (stop/start) and the old
+      // RTCPeerConnection — even if still 'connected' from the student side —
+      // is dead on the teacher side. Reusing it causes createOffer() to send
+      // an offer the teacher never processes, resulting in 0 bytes forever.
+      if (typeof(rtc) !== 'undefined') {
+        console.debug('[onRequestRtc] tearing down existing connection for new request ->', sessionId, 'state:', rtc.rtc ? rtc.rtc.connectionState : 'no rtc');
+        rtc.destroy();
+        if (typeof(rtc.rtc) !== 'undefined') {
+          rtc.rtc.close();
+        }
+        delete this.connections[sessionId];
+        rtc = undefined;
+      }
+
       if (typeof(rtc) === 'undefined') {
         const args = {sessionId: sessionId};
         if (Array.isArray(msg.data.customIce)) {
@@ -125,13 +178,23 @@ class CoRTCConnectionHandler {
         console.debug('[onRequestRtc] no rtc for session id, creating new one ->', this.connections);
       }
 
+      // Clear previous ICE callbacks to prevent duplicates on repeated requests
+      rtc.onIceCallbacks = [];
       rtc.addIceCallback((ice) => {
         if (ice) {
           this.sendIce(sessionId, ice);
         }
       });
 
-      rtc.createOffer().then(this.onRtcOffer.bind(this, sessionId));
+      // Start ICE gathering timeout (30 seconds) to detect stalled gathering
+      rtc.startIceGatheringTimeout(30000);
+
+      rtc.createOffer()
+        .then(this.onRtcOffer.bind(this, sessionId))
+        .catch((err) => {
+          console.error('[onRequestRtc] createOffer failed ->', err);
+          chrome.runtime.sendMessage({target: 'rtc_handler', action: 'webrtc_error', data: err.message});
+        });
     } catch (err) {
       errLog('[onRequestRtc] error ->', err);
       throw err;
@@ -223,7 +286,45 @@ class CoRTCConnectionHandler {
     Object.keys(this.connections).forEach((sessionId) => {
       if (this.presentSessionIds.indexOf(sessionId) === -1) {
         const rtcObj = this.connections[sessionId];
-        if (typeof(rtcObj) !== 'undefined' && typeof(rtcObj.rtc) !== 'undefined') {
+        if (typeof(rtcObj) !== 'undefined') {
+          rtcObj.destroy();
+          if (typeof(rtcObj.rtc) !== 'undefined') {
+            rtcObj.rtc.close();
+            delete rtcObj.rtc;
+          }
+        }
+        delete this.connections[sessionId];
+      }
+    });
+  }
+
+  // //
+  // extend disconnected timeout on all connections during wake transition
+  setWakeExtendedTimeout() {
+    Object.keys(this.connections).forEach((sessionId) => {
+      const rtcObj = this.connections[sessionId];
+      if (rtcObj) {
+        rtcObj.wakeExtendedTimeout = true;
+        // Clear after 60 seconds
+        if (rtcObj.wakeExtendedTimer) { clearTimeout(rtcObj.wakeExtendedTimer); }
+        rtcObj.wakeExtendedTimer = setTimeout(() => {
+          rtcObj.wakeExtendedTimeout = false;
+          rtcObj.wakeExtendedTimer = null;
+        }, 60000);
+      }
+    });
+  }
+
+  // //
+  // close all stale/disconnected connections (called on wake from sleep)
+  closeAllStaleConnections() {
+    console.debug('[closeAllStaleConnections] checking all connections after wake');
+    Object.keys(this.connections).forEach((sessionId) => {
+      const rtcObj = this.connections[sessionId];
+      if (typeof(rtcObj) !== 'undefined' && rtcObj.isStale()) {
+        console.debug(`[closeAllStaleConnections] closing stale connection -> ${sessionId}`);
+        rtcObj.destroy();
+        if (typeof(rtcObj.rtc) !== 'undefined') {
           rtcObj.rtc.close();
           delete rtcObj.rtc;
         }
@@ -252,9 +353,60 @@ class CoRTCConnection {
     this.onOfferCallbacks = [];
     this.haveAllIce = false;
 
+    this.iceGatheringTimeout = null;
+    this.disconnectedTimeout = null;
+    this.previousBytesSent = 0;
+    this.consecutiveZeroByteChecks = 0;
+    this.relayCandidateReceived = false;
+    this.wakeExtendedTimeout = false;
+    this.wakeExtendedTimer = null;
+
     if (typeof(RTCPeerConnection) !== 'undefined') {
       this.rtc = new RTCPeerConnection({iceServers: servers});
       this.rtc.onicecandidate = this.onIce.bind(this);
+
+      // Monitor connection state to detect dead connections (e.g. after sleep/wake)
+      this.rtc.onconnectionstatechange = () => {
+        const state = this.rtc.connectionState;
+        console.debug(`[CoRTCConnection] connectionState changed -> ${state} (session: ${this.sessionId})`);
+
+        if (state === 'disconnected') {
+          // Give a window for the connection to recover before declaring it stale.
+          // On Chromebook wake the network may take 10-20s to come back.
+          // Use 30s timeout during wake transitions, 20s otherwise.
+          const timeout = this.wakeExtendedTimeout ? 30000 : 20000;
+          this.disconnectedTimeout = setTimeout(() => {
+            if (this.rtc && this.rtc.connectionState === 'disconnected') {
+              console.debug(`[CoRTCConnection] connection still disconnected after ${timeout}ms, closing (session: ${this.sessionId})`);
+              this.rtc.close();
+              chrome.runtime.sendMessage({target: 'rtc_handler', action: 'webrtc_error', data: `connection_disconnected:${this.sessionId}`});
+            }
+          }, timeout);
+        } else if (state === 'connected') {
+          // Clear any pending disconnected timeout — connection recovered
+          if (this.disconnectedTimeout) {
+            clearTimeout(this.disconnectedTimeout);
+            this.disconnectedTimeout = null;
+          }
+          // Clear wake extension since we're connected
+          this.wakeExtendedTimeout = false;
+          if (this.wakeExtendedTimer) {
+            clearTimeout(this.wakeExtendedTimer);
+            this.wakeExtendedTimer = null;
+          }
+        } else if (state === 'failed' || state === 'closed') {
+          if (this.disconnectedTimeout) {
+            clearTimeout(this.disconnectedTimeout);
+            this.disconnectedTimeout = null;
+          }
+          chrome.runtime.sendMessage({target: 'rtc_handler', action: 'webrtc_error', data: `connection_${state}:${this.sessionId}`});
+        }
+      };
+
+      // Monitor ICE connection state as a secondary signal
+      this.rtc.oniceconnectionstatechange = () => {
+        console.debug(`[CoRTCConnection] iceConnectionState changed -> ${this.rtc.iceConnectionState} (session: ${this.sessionId})`);
+      };
 
       // gather stats
       if (getStatsInt) {
@@ -265,6 +417,14 @@ class CoRTCConnection {
         this.getStats();
       }, 5000);
     }
+  }
+
+  // //
+  // check if the underlying RTCPeerConnection is in a terminal/unusable state
+  isStale() {
+    if (typeof(this.rtc) === 'undefined') { return true; }
+    const state = this.rtc.connectionState;
+    return state === 'closed' || state === 'failed' || state === 'disconnected';
   }
 
   // //
@@ -281,16 +441,61 @@ class CoRTCConnection {
     if (event.candidate) {
       this.haveAllIce = false;
 
+      // Track relay candidates for ICE diagnostics
+      if (event.candidate.type === 'relay') {
+        this.relayCandidateReceived = true;
+      }
+
       this.ice.push(event.candidate);
       this.onIceCallbacks.forEach((callback) => {
         callback(event.candidate);
       });
 
     } else {
+      // ICE gathering complete — clear the gathering timeout
+      if (this.iceGatheringTimeout) {
+        clearTimeout(this.iceGatheringTimeout);
+        this.iceGatheringTimeout = null;
+      }
       this.haveAllIce = true;
       this.onIceCallbacks.forEach((callback) => {
         callback(null);
       });
+    }
+  }
+
+  // //
+  // start ICE gathering timeout
+  startIceGatheringTimeout(timeoutMs) {
+    if (this.iceGatheringTimeout) {
+      clearTimeout(this.iceGatheringTimeout);
+    }
+    this.iceGatheringTimeout = setTimeout(() => {
+      if (!this.haveAllIce) {
+        console.warn(`[CoRTCConnection] ICE gathering timed out after ${timeoutMs}ms (session: ${this.sessionId}, candidates: ${this.ice.length}, relay: ${this.relayCandidateReceived})`);
+        chrome.runtime.sendMessage({target: 'rtc_handler', action: 'webrtc_error', data: `ice_timeout:${this.sessionId}:${this.ice.length}candidates:relay=${this.relayCandidateReceived}`});
+        // Close the stalled connection so a fresh one can be created on retry
+        if (this.rtc) {
+          this.rtc.close();
+        }
+      }
+    }, timeoutMs);
+  }
+
+  // //
+  // clean up timers
+  destroy() {
+    if (this.iceGatheringTimeout) {
+      clearTimeout(this.iceGatheringTimeout);
+      this.iceGatheringTimeout = null;
+    }
+    if (this.disconnectedTimeout) {
+      clearTimeout(this.disconnectedTimeout);
+      this.disconnectedTimeout = null;
+    }
+    if (this.wakeExtendedTimer) {
+      clearTimeout(this.wakeExtendedTimer);
+      this.wakeExtendedTimer = null;
     }
   }
 
@@ -405,7 +610,7 @@ class CoRTCConnection {
         }
       });
 
-      if (localCandidate && remoteCandidate) {
+      if (localCandidate && remoteCandidate && outboundRtp) {
         const type = localCandidate.candidateType === 'relay' || remoteCandidate.candidateType === 'relay' ? 'turn' : 'stun';
         console.debug('[getStats] type ->', type);
         this.setSenderBitrate(type);
@@ -413,6 +618,21 @@ class CoRTCConnection {
         // send data to telemetry
         const data = {sessionId: this.sessionId, type: type, bytes: outboundRtp.bytesSent}
         chrome.runtime.sendMessage({target: 'rtc_handler', action: 'webrtc_data', data: data});
+
+        // Detect 0-byte stall: if bytesSent hasn't changed for 3 consecutive
+        // checks (15s), the stream is dead — tear down so teacher can re-request.
+        if (outboundRtp.bytesSent <= this.previousBytesSent) {
+          this.consecutiveZeroByteChecks++;
+          if (this.consecutiveZeroByteChecks >= 3) {
+            console.warn(`[getStats] 0 bytes sent for ${this.consecutiveZeroByteChecks} checks, tearing down (session: ${this.sessionId})`);
+            chrome.runtime.sendMessage({target: 'rtc_handler', action: 'webrtc_error', data: `zero_bytes:${this.sessionId}`});
+            this.rtc.close();
+            this.consecutiveZeroByteChecks = 0;
+          }
+        } else {
+          this.consecutiveZeroByteChecks = 0;
+        }
+        this.previousBytesSent = outboundRtp.bytesSent;
       }
     }
   }
@@ -426,7 +646,7 @@ class CoRTCConnection {
       return;
     }
 
-    const br = bitrates[type];
+    const br = effectiveBitrate(type);
     if (parameters.encodings[0].maxBitrate === (br.max * 1000)) {
       console.debug('[setSenderBitrate] bitrate already set');
       return;
@@ -492,9 +712,13 @@ function setBitrate(sdp) {
     return sdp;
   }
 
-  // Add b=AS lines for bitrate settings
-  lines.splice(mLineIndex + 1, 0, `b=AS:${bitrates.stun.max}`);
-  lines.splice(mLineIndex + 1, 0, `a=fmtp:${lines[mLineIndex].split(' ')[3]} x-google-start-bitrate=${bitrates.stun.start};x-google-min-bitrate=${bitrates.stun.min};x-google-max-bitrate=${bitrates.stun.max}`);
+  // Add b=AS lines for bitrate settings. Transport type (turn vs stun) isn't
+  // known yet at this point in negotiation, so this always uses the stun
+  // tier as the initial hint -- setSenderBitrate() re-applies the correct
+  // tier once the candidate pair (and therefore the real type) is known.
+  const br = effectiveBitrate('stun');
+  lines.splice(mLineIndex + 1, 0, `b=AS:${br.max}`);
+  lines.splice(mLineIndex + 1, 0, `a=fmtp:${lines[mLineIndex].split(' ')[3]} x-google-start-bitrate=${br.start};x-google-min-bitrate=${br.min};x-google-max-bitrate=${br.max}`);
 
   return lines.join('\r\n');
 }
@@ -538,18 +762,11 @@ function load() {
   const stream = canvas.captureStream(1);
   connectionHandler = new CoRTCConnectionHandler(stream);
 
-  console.debug('[setUser] connectionHandler');
-  rtcPresenceInt = setInterval(() => {
-    const sessionIds = [];
-    Object.keys(user.presence).forEach((clientId) => {
-      if (user.presence[clientId]) {
-        const sessionId = user.presence[clientId].sessionId;
-        if (typeof(sessionId) !== 'undefined' && sessionIds.indexOf(sessionId) === -1) {
-          sessionIds.push(sessionId);
-        }
-      }
-    });
-    connectionHandler.updatePresence(sessionIds);
-  }, 30000);
+  console.debug('[load] connectionHandler ready');
+  // Presence is managed by the background worker via addPresence() calls
+  // when request_rtc messages arrive. The offscreen document does not have
+  // access to the `user` object, so we cannot iterate user.presence here.
+  // cleanConnections() (every 30s) already prunes stale connections using
+  // presentSessionIds which is maintained through addPresence().
 }
 load();

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lightspeed Identity Agent",
-  "version": "1.0.2.1776213267",
+  "version": "1.0.4.1789789821",
   "description": "OAuth identity provider for Lightspeed Agents",
   "permissions": [
     "alarms",
