@@ -1,6 +1,6 @@
 # Lightspeed Signal Agent — Extension Analysis
 
-**Version:** 0.6.1.1776950773  
+**Version:** 0.6.3.1790048322  
 **Publisher:** Lightspeed Systems  
 **Manifest Version:** 3
 

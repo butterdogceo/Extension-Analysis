@@ -1,6 +1,6 @@
 # Lightspeed Filter Helper — Extension Analysis
 
-**Version:** 1.3.3.1779238475
+**Version:** 1.4.0.1791338991
 **Publisher:** Lightspeed Systems
 **Manifest Version:** 3
 
