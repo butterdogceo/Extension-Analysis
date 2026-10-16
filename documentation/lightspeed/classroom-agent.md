@@ -1,6 +1,6 @@
 # Lightspeed Classroom Agent — Extension Analysis
 
-**Version:** 5.3.0.1777318718  
+**Version:** 5.6.3.1791402870  
 **Publisher:** Lightspeed Systems  
 **Manifest Version:** 3
 

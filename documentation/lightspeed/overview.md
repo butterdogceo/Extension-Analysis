@@ -1,62 +1,34 @@
 # Lightspeed Extensions — Overview
 
 **Publisher:** Lightspeed Systems  
-**Product Suite:** Lightspeed Relay (filtering) + Lightspeed Classroom (monitoring)
+**Product Suite:** Lightspeed Relay + Lightspeed Classroom
 
 ---
 
 ## Suite Overview
 
-Lightspeed deploys five coordinated Chrome extensions on managed Chromebooks. They are tightly integrated — sharing identity through the Identity Agent and policy through the Relay cloud service.
-
 | Extension | Version | Primary Function |
 |-----------|---------|-----------------|
-| [Chrome Filter Agent](./chrome-filter.md) | 4.3.0 | URL categorization, content blocking, policy enforcement |
-| [Filter Helper](./filter-helper.md) | 1.3.3 | Client-side image blurring, proxy/bypass-page detection, AI prompt logging |
-| [Classroom Agent](./classroom-agent.md) | 5.3.0 | Teacher monitoring, screen sharing, tab visibility |
-| [Identity Agent](./identity-agent.md) | 1.0.2 | OAuth2 identity resolution and sharing |
-| [Signal Agent](./signal-agent.md) | 0.6.1 | Device telemetry, speed testing, hardware metrics |
+| [Chrome Filter Agent](./chrome-filter.md) | 4.4.9.1791454364 | Network-layer URL/content policy enforcement |
+| [Filter Helper](./filter-helper.md) | 1.4.0.1791338991 | In-page image blur + bypass/AI behavior detection |
+| [Classroom Agent](./classroom-agent.md) | 5.6.3.1791402870 | Teacher monitoring, tab/screen visibility |
+| [Identity Agent](./identity-agent.md) | 1.0.4.1789789821 | OAuth identity brokering for other Lightspeed agents |
+| [Signal Agent](./signal-agent.md) | 0.6.3.1790048322 | Device/network telemetry and performance collection |
 
 ---
 
-## How They Work Together
+## Filtering-Relevant Role Separation
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Student Chromebook                                             │
-│                                                                 │
-│  ┌───────────────┐  identity   ┌──────────────────────────┐     │
-│  │ Identity Agent│ ──────────► │  Chrome Filter Agent     │     │
-│  │               │             │  (URL blocking, policy)  │     │
-│  └───────────────┘             └──────────┬───────────────┘     │
-│                                           │ category/policy     │
-│                                           ▼                     │
-│                               ┌──────────────────────────┐      │
-│                               │  Filter Helper           │      │
-│                               │  (blur + bypass detect)  │      │
-│                               └───────┬───────────┬──────┘      │
-│         identity                      │ reports    │ AI logs    │
-│         ▼                             ▼            ▼            │
-│  ┌───────────────┐           ┌─────────────────────────┐        │
-│  │ Classroom     │           │  Signal Agent           │        │
-│  │ Agent         │           │  (telemetry, timing)    │        │
-│  │ (monitoring)  │           └──────────┬──────────────┘        │
-│  └───────┬───────┘                      │                       │
-└──────────┼───────────────────────────── │ ──────────────────────┘
-           │                              │
-           ▼                              ▼
-    Teacher Dashboard              Lightspeed Cloud
-    (real-time view)         (policy, reporting, analytics)
-```
+- **Primary blocker:** Chrome Filter Agent (webRequest + WASM policy engine)
+- **In-page enforcement/detection:** Filter Helper (image blur, proxy/bypass page signals, AI bypass-intent logging)
+- **Monitoring-only (not primary blockers):** Classroom Agent and Signal Agent
+- **Identity support only:** Identity Agent
 
 ---
 
-## Shared Infrastructure
+## Shared Platform Signals
 
-- **Policy API:** `https://devices.filter.relay.school/filter/chrome/v2/user_policy`
-- **Real-time policy sync:** `wss://production-gc.lsfilter.com`
-- **Violation reporting:** AWS SQS `lsrelay-reports-production` (us-west-2)
-- **Filter Helper AI prompt reporting:** AWS SQS `ai-prompt-reporting` (us-west-2)
-- **Filter Helper credentials / helper service:** `https://filter-agent.lightspeedsystems.app`
-- **Block page assets:** `lsrelay-config-production.s3.amazonaws.com`
-- **Extension updates:** `lsrelay-extensions-production.s3.amazonaws.com`
+- Identity resolution is shared across the suite (Google account / device identity)
+- Cloud-managed policy controls behavior and can update dynamically
+- Exploit/proxy detection signals are reused across multiple Lightspeed agents
+- Reporting pipelines forward blocked/flagged behavior to Lightspeed cloud services

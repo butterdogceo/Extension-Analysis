@@ -1,6 +1,6 @@
 # Lightspeed Identity Agent — Extension Analysis
 
-**Version:** 1.0.2.1776213267  
+**Version:** 1.0.4.1789789821  
 **Publisher:** Lightspeed Systems  
 **Manifest Version:** 3
 

@@ -1,8 +1,8 @@
 # Lightspeed Chrome Filter Agent — Extension Analysis
 
-**Version:** 4.3.0.1777107754  
+**Version:** 4.4.9.1791454364  
 **Publisher:** Lightspeed Systems  
-**Manifest Version:** 2 (with MV3-style service worker)
+**Manifest Version:** 3
 
 ---
 
